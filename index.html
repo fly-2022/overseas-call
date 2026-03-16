@@ -123,9 +123,16 @@ main{max-width:860px;margin:0 auto;padding:1.4rem 1rem 4rem}
         <label>Rank</label>
         <select id="f-rank">
           <option value="">— Select rank —</option>
-          <option>SGT 1</option><option>SGT 2</option><option>SGT 3</option>
-          <option>SSGT</option><option>CI (1)</option><option>CI (2)</option>
-          <option>INSP</option><option>ASP</option><option>DSP</option><option>SUPT</option>
+          <option>SGT 1</option>
+          <option>SGT 2</option>
+          <option>SGT 3</option>
+          <option>SSGT</option>
+          <option>CI (1)</option>
+          <option>CI (2)</option>
+          <option>INSP</option>
+          <option>ASP</option>
+          <option>DSP</option>
+          <option>SUPT</option>
         </select>
       </div>
       <div class="field"><label>Date <span class="req">*</span></label><input type="date" id="f-date"></div>
@@ -324,7 +331,7 @@ async function renderLog() {
         <div class="field"><label>Deployment</label>${selectHtml('e-dep-'+e.id, DEPS, e.dep)}</div>
         <div class="field"><label>Name of overseas contact</label><input type="text" id="e-name-${e.id}" value="${esc(e.name)}"></div>
         <div class="field"><label>Contact number of MOP</label><input type="text" id="e-mop-${e.id}" value="${esc(e.mop||'')}"></div>
-        <div class="field"><label>Number called</label><input type="text" id="e-number-${e.id}" value="${esc(e.number)}"></div>
+        <div class="field"><label>Number used to call (Zone TL phone)</label><input type="text" id="e-number-${e.id}" value="${esc(e.number)}"></div>
         <div class="field"><label>Country</label><input type="text" id="e-country-${e.id}" value="${esc(e.country)}"></div>
         <div class="field ef-full"><label>Purpose of call</label><textarea id="e-purpose-${e.id}">${esc(e.purpose)}</textarea></div>
       </div>
