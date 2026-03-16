@@ -85,6 +85,11 @@ main{max-width:860px;margin:0 auto;padding:1.4rem 1rem 4rem}
 .btn-cancel:hover{background:var(--surface)}
 .empty-state,.loading-state{text-align:center;padding:2.5rem 1rem;color:var(--text3);font-size:13.5px}
 .spinner{width:22px;height:22px;border:2px solid var(--border-strong);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+.entry-detail-grid{margin-top:8px;display:flex;flex-direction:column;gap:3px}
+.entry-detail-row{display:flex;gap:8px;font-size:13px;line-height:1.5}
+.entry-dl{flex-shrink:0;width:130px;color:var(--text3);font-size:12px;padding-top:1px}
+.entry-dv{color:var(--text2);flex:1}
+@media(max-width:420px){.entry-dl{width:110px}}
 @keyframes spin{to{transform:rotate(360deg)}}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(6px);background:#1a1916;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .22s,transform .22s;pointer-events:none;z-index:200;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.22)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -113,12 +118,7 @@ main{max-width:860px;margin:0 auto;padding:1.4rem 1rem 4rem}
   <p class="sec-label">Log a new call</p>
   <div class="card">
     <div class="form-grid">
-      <div class="field"><label>Date <span class="req">*</span></label><input type="date" id="f-date"></div>
-      <div class="field"><label>Time</label><input type="time" id="f-time"></div>
-      <div class="field"><label>Contact name <span class="req">*</span></label><input type="text" id="f-name" placeholder="e.g. John Smith"></div>
-      <div class="field"><label>Number called <span class="req">*</span></label><input type="text" id="f-number" placeholder="e.g. +60 3 1234 5678 (overseas no.)"></div>
-      <div class="field"><label>Country</label><input type="text" id="f-country" placeholder="e.g. Malaysia"></div>
-      <div class="field"><label>Logged by</label><input type="text" id="f-by" placeholder="Your name"></div>
+      <div class="field"><label>Name of officer <span class="req">*</span></label><input type="text" id="f-by" placeholder="Officer's name"></div>
       <div class="field">
         <label>Rank</label>
         <select id="f-rank">
@@ -128,6 +128,16 @@ main{max-width:860px;margin:0 auto;padding:1.4rem 1rem 4rem}
           <option>INSP</option><option>ASP</option><option>DSP</option><option>SUPT</option>
         </select>
       </div>
+      <div class="field"><label>Date <span class="req">*</span></label><input type="date" id="f-date"></div>
+      <div class="field"><label>Time</label><input type="time" id="f-time"></div>
+      <div class="field">
+        <label>Zone <span class="req">*</span></label>
+        <select id="f-zone" onchange="onZoneChange()">
+          <option value="">— Select zone —</option>
+          <option>Train</option><option>OWC</option><option>CCC</option>
+          <option>Arrival Car</option><option>Departure Car</option><option>Bus</option><option>Concourse</option>
+        </select>
+      </div>
       <div class="field">
         <label>Deployment</label>
         <select id="f-dep">
@@ -135,14 +145,10 @@ main{max-width:860px;margin:0 auto;padding:1.4rem 1rem 4rem}
           <option>A&amp;I</option><option>S&amp;E</option><option>DO</option><option>GL</option><option>ZTL</option>
         </select>
       </div>
-      <div class="field">
-        <label>Zone</label>
-        <select id="f-zone">
-          <option value="">— Select zone —</option>
-          <option>Train</option><option>OWC</option><option>CCC</option>
-          <option>Arrival Car</option><option>Departure Car</option><option>Bus</option>
-        </select>
-      </div>
+      <div class="field"><label>Name of overseas contact <span class="req">*</span></label><input type="text" id="f-name" placeholder="e.g. John Smith"></div>
+      <div class="field"><label>Contact number of MOP</label><input type="text" id="f-mop" placeholder="MOP's handphone number"></div>
+      <div class="field"><label>Number called (auto-filled by zone)</label><input type="text" id="f-number" placeholder="Select a zone to auto-fill" readonly style="background:var(--surface2);color:var(--text2);cursor:default"></div>
+      <div class="field"><label>Country</label><input type="text" id="f-country" placeholder="e.g. Malaysia"></div>
       <div class="field full"><label>Purpose of call <span class="req">*</span></label><textarea id="f-purpose" placeholder="Brief description of the call purpose and any key points discussed…"></textarea></div>
     </div>
     <div class="form-actions">
@@ -190,7 +196,7 @@ const store = {
 
 const RANKS = ['SGT 1','SGT 2','SGT 3','SSGT','CI (1)','CI (2)','INSP','ASP','DSP','SUPT'];
 const DEPS  = ['A&I','S&E','DO','GL','ZTL'];
-const ZONES = ['Train','OWC','CCC','Arrival Car','Departure Car','Bus'];
+const ZONES = ['Train','OWC','CCC','Arrival Car','Departure Car','Bus','Concourse'];
 
 let editingId = null;
 
@@ -206,9 +212,28 @@ function selectHtml(id, opts, val) {
   return `<select id="${id}">${options}</select>`;
 }
 
+const ZONE_NUMBERS = {
+  'Arrival Car':   '12345678',
+  'Departure Car': '23456789',
+  'Train':         '34567890',
+  'OWC':           '01234567',
+  'CCC':           '45678901',
+  'Bus':           '56789012',
+  'Concourse':     '67890123'
+};
+
+function onZoneChange() {
+  const zone = document.getElementById('f-zone').value;
+  const numEl = document.getElementById('f-number');
+  numEl.value = ZONE_NUMBERS[zone] || '';
+  numEl.placeholder = zone ? '' : 'Select a zone to auto-fill';
+}
+
 function clearForm() {
-  ['f-name','f-number','f-country','f-by'].forEach(i => document.getElementById(i).value = '');
+  ['f-name','f-mop','f-country','f-by'].forEach(i => document.getElementById(i).value = '');
   ['f-rank','f-dep','f-zone'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('f-number').value = '';
+  document.getElementById('f-number').placeholder = 'Select a zone to auto-fill';
   document.getElementById('f-purpose').value = '';
   document.getElementById('f-time').value = '';
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
@@ -224,16 +249,20 @@ async function submitEntry() {
   const g = id => document.getElementById(id).value.trim();
   const date = document.getElementById('f-date').value;
   const time = document.getElementById('f-time').value;
-  const name = g('f-name'), number = g('f-number'), purpose = g('f-purpose');
-  if (!date)    { shake('f-date');    toast('Please enter a date.'); return; }
-  if (!name)    { shake('f-name');    toast('Please enter a contact name.'); return; }
-  if (!number)  { shake('f-number'); toast('Please enter the overseas number that was called.'); return; }
-  if (!purpose) { shake('f-purpose'); toast('Please describe the purpose of the call.'); return; }
+  const name = g('f-name'), purpose = g('f-purpose');
+  const zone = g('f-zone');
+  if (!g('f-by'))  { shake('f-by');      toast('Please enter the name of the person who called.'); return; }
+  if (!date)        { shake('f-date');    toast('Please enter a date.'); return; }
+  if (!zone)        { shake('f-zone');    toast('Please select a zone.'); return; }
+  if (!name)        { shake('f-name');    toast('Please enter the overseas contact name.'); return; }
+  if (!purpose)     { shake('f-purpose'); toast('Please describe the purpose of the call.'); return; }
 
   const entries = await store.get();
-  entries.unshift({ id: Date.now(), date, time, name, number,
+  entries.unshift({ id: Date.now(), date, time, name,
+    mop: g('f-mop'),
+    number: g('f-number'),
     country: g('f-country'), by: g('f-by'),
-    rank: g('f-rank'), dep: g('f-dep'), zone: g('f-zone'),
+    rank: g('f-rank'), dep: g('f-dep'), zone,
     purpose, logged_at: new Date().toISOString() });
   await store.set(entries);
   clearForm(); await renderLog(); toast('Call logged successfully.');
@@ -253,7 +282,8 @@ async function saveEdit(id) {
   const entries = await store.get();
   const idx = entries.findIndex(e => e.id === id); if (idx === -1) return;
   entries[idx] = { ...entries[idx],
-    date: dv('date'), time: dv('time'), name: g('name'), number: g('number'),
+    date: dv('date'), time: dv('time'), name: g('name'),
+    mop: g('mop'), number: g('number'),
     country: g('country'), by: g('by'), rank: g('rank'), dep: g('dep'), zone: g('zone'),
     purpose: g('purpose'), edited_at: new Date().toISOString() };
   await store.set(entries); editingId = null; await renderLog(); toast('Entry updated.');
@@ -280,22 +310,22 @@ async function renderLog() {
     const pills = [
       e.number  ? `<span class="pill blue">${esc(e.number)}</span>` : '',
       e.country ? `<span class="pill">${esc(e.country)}</span>` : '',
-      e.rank    ? `<span class="pill rank">${esc(e.rank)}</span>` : '',
       e.dep     ? `<span class="pill dep">${esc(e.dep)}</span>` : '',
       e.zone    ? `<span class="pill zone">${esc(e.zone)}</span>` : '',
     ].filter(Boolean).join('');
 
     const editForm = isEditing ? `<div class="edit-form">
       <div class="edit-grid">
+        <div class="field"><label>Name of officer</label><input type="text" id="e-by-${e.id}" value="${esc(e.by)}"></div>
+        <div class="field"><label>Rank</label>${selectHtml('e-rank-'+e.id, RANKS, e.rank)}</div>
         <div class="field"><label>Date</label><input type="date" id="e-date-${e.id}" value="${esc(e.date)}"></div>
         <div class="field"><label>Time</label><input type="time" id="e-time-${e.id}" value="${esc(e.time)}"></div>
-        <div class="field"><label>Contact name</label><input type="text" id="e-name-${e.id}" value="${esc(e.name)}"></div>
+        <div class="field"><label>Zone</label>${selectHtml('e-zone-'+e.id, ZONES, e.zone)}</div>
+        <div class="field"><label>Deployment</label>${selectHtml('e-dep-'+e.id, DEPS, e.dep)}</div>
+        <div class="field"><label>Name of overseas contact</label><input type="text" id="e-name-${e.id}" value="${esc(e.name)}"></div>
+        <div class="field"><label>Contact number of MOP</label><input type="text" id="e-mop-${e.id}" value="${esc(e.mop||'')}"></div>
         <div class="field"><label>Number called</label><input type="text" id="e-number-${e.id}" value="${esc(e.number)}"></div>
         <div class="field"><label>Country</label><input type="text" id="e-country-${e.id}" value="${esc(e.country)}"></div>
-        <div class="field"><label>Logged by</label><input type="text" id="e-by-${e.id}" value="${esc(e.by)}"></div>
-        <div class="field"><label>Rank</label>${selectHtml('e-rank-'+e.id, RANKS, e.rank)}</div>
-        <div class="field"><label>Deployment</label>${selectHtml('e-dep-'+e.id, DEPS, e.dep)}</div>
-        <div class="field"><label>Zone</label>${selectHtml('e-zone-'+e.id, ZONES, e.zone)}</div>
         <div class="field ef-full"><label>Purpose of call</label><textarea id="e-purpose-${e.id}">${esc(e.purpose)}</textarea></div>
       </div>
       <div class="edit-actions">
@@ -307,8 +337,12 @@ async function renderLog() {
     return `<div class="entry" id="entry-${e.id}">
       <div class="entry-top">
         <div class="entry-left">
-          <div class="entry-name">${esc(e.name)}</div>
-          <div class="entry-pills">${pills}</div>
+          <div class="entry-name">${esc(e.name) || '—'}</div>
+          <div class="entry-pills">
+            ${e.rank ? '<span class="pill rank">' + esc(e.rank) + '</span>' : ''}
+            ${e.dep  ? '<span class="pill dep">'  + esc(e.dep)  + '</span>' : ''}
+            ${e.zone ? '<span class="pill zone">' + esc(e.zone) + '</span>' : ''}
+          </div>
         </div>
         <div class="entry-right">
           <div class="entry-dt">${fmtDate(e.date)}${e.time ? '<br>' + esc(e.time) : ''}</div>
@@ -316,8 +350,14 @@ async function renderLog() {
           <button class="action-btn del" onclick="deleteEntry(${e.id})">&#x2715;</button>
         </div>
       </div>
-      ${e.purpose ? `<div class="entry-purpose">${esc(e.purpose)}</div>` : ''}
-      ${e.by ? `<div class="entry-meta">Logged by ${esc(e.by)}${e.edited_at ? ' · edited' : ''}</div>` : ''}
+      <div class="entry-detail-grid">
+        <div class="entry-detail-row"><span class="entry-dl">Name of officer</span><span class="entry-dv">${esc(e.by)}</span></div>
+        ${e.mop ? '<div class="entry-detail-row"><span class="entry-dl">Contact no. of MOP</span><span class="entry-dv">' + esc(e.mop) + '</span></div>' : ''}
+        <div class="entry-detail-row"><span class="entry-dl">ZTL phone number</span><span class="entry-dv">${esc(e.number) || '—'}</span></div>
+        ${e.country ? '<div class="entry-detail-row"><span class="entry-dl">Country</span><span class="entry-dv">' + esc(e.country) + '</span></div>' : ''}
+        <div class="entry-detail-row"><span class="entry-dl">Purpose</span><span class="entry-dv">${esc(e.purpose)}</span></div>
+      </div>
+      ${e.edited_at ? '<div class="entry-meta">edited</div>' : ''}
       ${editForm}
     </div>`;
   }).join('');
@@ -328,16 +368,22 @@ async function exportExcel() {
   const entries = await store.get();
   if (!entries.length) { toast('No entries to export yet.'); return; }
   const rows = entries.map(e => ({
-    'Date': e.date || '', 'Time': e.time || '',
-    'Contact Name': e.name || '', 'Contact Number': e.number || '',
-    'Country': e.country || '', 'Rank': e.rank || '',
-    'Deployment': e.dep || '', 'Zone': e.zone || '',
-    'Purpose of Call': e.purpose || '', 'Logged By': e.by || '',
+    'Name of Officer': e.by || '',
+    'Rank': e.rank || '',
+    'Date': e.date || '',
+    'Time': e.time || '',
+    'Zone': e.zone || '',
+    'Deployment': e.dep || '',
+    'Contact Number of MOP': e.mop || '',
+    'Name of Overseas Contact': e.name || '',
+    'ZTL Phone Number': e.number || '',
+    'Country': e.country || '',
+    'Purpose of Call': e.purpose || '',
     'Entry Timestamp': e.logged_at ? new Date(e.logged_at).toLocaleString('en-GB') : ''
   }));
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [{wch:13},{wch:9},{wch:22},{wch:20},{wch:16},{wch:10},{wch:14},{wch:14},{wch:48},{wch:18},{wch:22}];
+  ws['!cols'] = [{wch:22},{wch:10},{wch:13},{wch:9},{wch:14},{wch:14},{wch:22},{wch:22},{wch:16},{wch:14},{wch:48},{wch:22}];
   XLSX.utils.book_append_sheet(wb, ws, 'Call Log');
   XLSX.writeFile(wb, `Overseas_Call_Log_${new Date().toISOString().split('T')[0]}.xlsx`);
   toast(`Exported ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}.`);
