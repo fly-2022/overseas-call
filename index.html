@@ -1,341 +1,1023 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Overseas Call Log</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#f6f5f1;--surface:#fff;--surface2:#f0efe9;--border:rgba(0,0,0,0.09);
-  --border-strong:rgba(0,0,0,0.16);--text:#1a1916;--text2:#5a5855;--text3:#9a9895;
-  --accent:#1a3a5c;--accent-light:#e8f0f8;--danger-bg:#fdf0f0;--danger:#8c2a2a;
-  --radius:10px;--rsm:6px;--shadow:0 1px 3px rgba(0,0,0,0.07),0 1px 2px rgba(0,0,0,0.05);
-}
-body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5}
-header{background:var(--accent);color:#fff;padding:0 1rem;position:sticky;top:0;z-index:60;box-shadow:0 2px 8px rgba(0,0,0,0.18)}
-.hdr{max-width:860px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:52px;gap:10px}
-.hdr-title{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:600}
-.hdr-title svg{opacity:.85;flex-shrink:0}
-.hdr-right{display:flex;gap:7px;align-items:center}
-.btn-hdr{background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.22);color:#fff;border-radius:var(--rsm);padding:6px 13px;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:background .15s}
-.btn-hdr:hover{background:rgba(255,255,255,0.23)}
-.live-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;flex-shrink:0;box-shadow:0 0 0 0 rgba(74,222,128,0.5);animation:pulse 2s infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,0.45)}70%{box-shadow:0 0 0 6px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
-.live-label{font-size:11px;color:rgba(255,255,255,0.7);font-weight:500}
-main{max-width:860px;margin:0 auto;padding:1.4rem 1rem 4rem}
-.sec-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:.55rem}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.15rem}
-.mt{margin-top:1.6rem}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
-@media(max-width:540px){.form-grid{grid-template-columns:1fr}.field.full{grid-column:1}}
-.field{display:flex;flex-direction:column;gap:4px}
-.field.full{grid-column:1/-1}
-.field label{font-size:12px;font-weight:600;color:var(--text2)}
-.req{color:#b94a4a}
-.field input,.field select,.field textarea{font-family:inherit;font-size:13.5px;color:var(--text);background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--rsm);padding:8px 10px;outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,58,92,0.11)}
-.field textarea{resize:vertical;min-height:68px;line-height:1.5}
-.form-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
-.btn-clear{background:transparent;border:1px solid var(--border-strong);color:var(--text2);border-radius:var(--rsm);padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s}
-.btn-clear:hover{background:var(--surface2)}
-.btn-submit{background:var(--accent);border:none;color:#fff;border-radius:var(--rsm);padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
-.btn-submit:hover{opacity:.87}
-.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:.65rem;flex-wrap:wrap}
-.toolbar .sec-label{margin:0;flex-shrink:0}
-.count-pill{font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px 9px;color:var(--text2);flex-shrink:0}
-.spacer{flex:1}
-.search-wrap{position:relative;width:100%;max-width:240px}
-@media(max-width:460px){.search-wrap{max-width:100%}}
-.search-wrap input{width:100%;font-family:inherit;font-size:13px;border:1px solid var(--border-strong);border-radius:20px;padding:6px 11px 6px 30px;outline:none;background:var(--surface);color:var(--text);transition:border-color .15s}
-.search-wrap input:focus{border-color:var(--accent)}
-.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none}
-.entry{padding:13px 0;border-bottom:1px solid var(--border);animation:fi .22s ease}
-.entry:last-child{border-bottom:none;padding-bottom:0}
-.entry:first-child{padding-top:0}
-@keyframes fi{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
-.entry-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.entry-left{flex:1;min-width:0}
-.entry-name{font-size:14.5px;font-weight:600;color:var(--text)}
-.entry-pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
-.pill{font-size:11.5px;padding:2px 8px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);white-space:nowrap}
-.pill.blue{background:var(--accent-light);border-color:rgba(26,58,92,0.14);color:var(--accent);font-weight:500}
-.pill.rank{background:#f0f7ee;border-color:rgba(30,100,50,0.15);color:#1e5c32}
-.pill.zone{background:#fdf6e8;border-color:rgba(160,110,20,0.18);color:#7a5010}
-.pill.dep{background:#f5eef8;border-color:rgba(100,30,120,0.15);color:#5a1a72}
-.entry-right{display:flex;align-items:flex-start;gap:6px;flex-shrink:0}
-.entry-dt{font-size:11.5px;color:var(--text3);text-align:right;white-space:nowrap;padding-top:2px}
-.action-btn{background:none;border:1px solid var(--border);color:var(--text2);border-radius:var(--rsm);padding:3px 9px;font-size:11.5px;cursor:pointer;transition:all .15s;white-space:nowrap}
-.action-btn:hover{border-color:var(--border-strong);background:var(--surface2)}
-.action-btn.del:hover{color:var(--danger);background:var(--danger-bg);border-color:rgba(140,42,42,0.2)}
-.entry-purpose{font-size:13px;color:var(--text2);margin-top:6px;line-height:1.6}
-.entry-meta{font-size:11.5px;color:var(--text3);margin-top:3px}
-.edit-form{background:var(--surface2);border:1px solid var(--border-strong);border-radius:var(--rsm);padding:12px;margin-top:10px}
-.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-@media(max-width:440px){.edit-grid{grid-template-columns:1fr}.ef-full{grid-column:1}}
-.ef-full{grid-column:1/-1}
-.edit-form .field label{font-size:11.5px}
-.edit-form .field input,.edit-form .field textarea,.edit-form .field select{font-size:13px;padding:7px 9px}
-.edit-form .field textarea{min-height:56px}
-.edit-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:9px}
-.btn-save{background:var(--accent);color:#fff;border:none;border-radius:var(--rsm);padding:7px 16px;font-size:12.5px;font-weight:600;cursor:pointer}
-.btn-save:hover{opacity:.87}
-.btn-cancel{background:transparent;border:1px solid var(--border-strong);color:var(--text2);border-radius:var(--rsm);padding:7px 14px;font-size:12.5px;cursor:pointer}
-.btn-cancel:hover{background:var(--surface)}
-.empty-state,.loading-state{text-align:center;padding:2.5rem 1rem;color:var(--text3);font-size:13.5px}
-.spinner{width:22px;height:22px;border:2px solid var(--border-strong);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
-.entry-detail-grid{margin-top:8px;display:flex;flex-direction:column;gap:3px}
-.entry-detail-row{display:flex;gap:8px;font-size:13px;line-height:1.5}
-.entry-dl{flex-shrink:0;width:130px;color:var(--text3);font-size:12px;padding-top:1px}
-.entry-dv{color:var(--text2);flex:1}
-@media(max-width:420px){.entry-dl{width:110px}}
-@keyframes spin{to{transform:rotate(360deg)}}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(6px);background:#1a1916;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .22s,transform .22s;pointer-events:none;z-index:200;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.22)}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-</style>
-</head>
-<body>
-
-<header>
-  <div class="hdr">
-    <div class="hdr-title">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7.5" stroke="white" stroke-width="1.3"/><path d="M9 1.5C9 1.5 6.5 4.5 6.5 9s2.5 7.5 2.5 7.5M9 1.5C9 1.5 11.5 4.5 11.5 9S9 16.5 9 16.5M1.5 9h15" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg>
-      Overseas Call Log
-    </div>
-    <div class="hdr-right">
-      <div class="live-dot"></div>
-      <span class="live-label">Live shared</span>
-      <button class="btn-hdr" onclick="exportExcel()">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v7M4 6l2.5 2.5L9 6M2 9.5V11a1 1 0 001 1h7a1 1 0 001-1V9.5" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Export Excel
-      </button>
-    </div>
-  </div>
-</header>
-
-<main>
-  <p class="sec-label">Log a new call</p>
-  <div class="card">
-    <div class="form-grid">
-      <div class="field"><label>Name of officer <span class="req">*</span></label><input type="text" id="f-by" placeholder="Officer's name"></div>
-      <div class="field">
-        <label>Rank</label>
-        <select id="f-rank">
-          <option value="">— Select rank —</option>
-          <option>SGT 1</option>
-          <option>SGT 2</option>
-          <option>SGT 3</option>
-          <option>SSGT</option>
-          <option>CI (1)</option>
-          <option>CI (2)</option>
-          <option>INSP</option>
-          <option>ASP</option>
-          <option>DSP</option>
-          <option>SUPT</option>
-        </select>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Overseas Call Log</title>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> -->
+    <script src="xlsx.full.min.js"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #f6f5f1;
+        --surface: #fff;
+        --surface2: #f0efe9;
+        --border: rgba(0, 0, 0, 0.09);
+        --border-strong: rgba(0, 0, 0, 0.16);
+        --text: #1a1916;
+        --text2: #5a5855;
+        --text3: #9a9895;
+        --accent: #1a3a5c;
+        --accent-light: #e8f0f8;
+        --danger-bg: #fdf0f0;
+        --danger: #8c2a2a;
+        --radius: 10px;
+        --rsm: 6px;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 1px 2px rgba(0, 0, 0, 0.05);
+      }
+      body {
+        font-family:
+          "Segoe UI",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      header {
+        background: var(--accent);
+        color: #fff;
+        padding: 0 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 60;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+      }
+      .hdr {
+        max-width: 860px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 52px;
+        gap: 10px;
+      }
+      .hdr-title {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .hdr-title svg {
+        opacity: 0.85;
+        flex-shrink: 0;
+      }
+      .hdr-right {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+      }
+      .btn-hdr {
+        background: rgba(255, 255, 255, 0.13);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        color: #fff;
+        border-radius: var(--rsm);
+        padding: 6px 13px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+        transition: background 0.15s;
+      }
+      .btn-hdr:hover {
+        background: rgba(255, 255, 255, 0.23);
+      }
+      .live-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #4ade80;
+        flex-shrink: 0;
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.5);
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.45);
+        }
+        70% {
+          box-shadow: 0 0 0 6px rgba(74, 222, 128, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+        }
+      }
+      .live-label {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 500;
+      }
+      main {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 1.4rem 1rem 4rem;
+      }
+      .sec-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text3);
+        margin-bottom: 0.55rem;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1.15rem;
+      }
+      .mt {
+        margin-top: 1.6rem;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 11px;
+      }
+      @media (max-width: 540px) {
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+        .field.full {
+          grid-column: 1;
+        }
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .field.full {
+        grid-column: 1/-1;
+      }
+      .field label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text2);
+      }
+      .req {
+        color: #b94a4a;
+      }
+      .field input,
+      .field select,
+      .field textarea {
+        font-family: inherit;
+        font-size: 13.5px;
+        color: var(--text);
+        background: var(--surface);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--rsm);
+        padding: 8px 10px;
+        outline: none;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+        width: 100%;
+      }
+      .field input:focus,
+      .field select:focus,
+      .field textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(26, 58, 92, 0.11);
+      }
+      .field textarea {
+        resize: vertical;
+        min-height: 68px;
+        line-height: 1.5;
+      }
+      .form-actions {
+        display: flex;
+        gap: 7px;
+        justify-content: flex-end;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+      .btn-clear {
+        background: transparent;
+        border: 1px solid var(--border-strong);
+        color: var(--text2);
+        border-radius: var(--rsm);
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .btn-clear:hover {
+        background: var(--surface2);
+      }
+      .btn-submit {
+        background: var(--accent);
+        border: none;
+        color: #fff;
+        border-radius: var(--rsm);
+        padding: 8px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+      .btn-submit:hover {
+        opacity: 0.87;
+      }
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 0.65rem;
+        flex-wrap: wrap;
+      }
+      .toolbar .sec-label {
+        margin: 0;
+        flex-shrink: 0;
+      }
+      .count-pill {
+        font-size: 12px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 2px 9px;
+        color: var(--text2);
+        flex-shrink: 0;
+      }
+      .spacer {
+        flex: 1;
+      }
+      .search-wrap {
+        position: relative;
+        width: 100%;
+        max-width: 240px;
+      }
+      @media (max-width: 460px) {
+        .search-wrap {
+          max-width: 100%;
+        }
+      }
+      .search-wrap input {
+        width: 100%;
+        font-family: inherit;
+        font-size: 13px;
+        border: 1px solid var(--border-strong);
+        border-radius: 20px;
+        padding: 6px 11px 6px 30px;
+        outline: none;
+        background: var(--surface);
+        color: var(--text);
+        transition: border-color 0.15s;
+      }
+      .search-wrap input:focus {
+        border-color: var(--accent);
+      }
+      .search-icon {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text3);
+        pointer-events: none;
+      }
+      .entry {
+        padding: 13px 0;
+        border-bottom: 1px solid var(--border);
+        animation: fi 0.22s ease;
+      }
+      .entry:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+      .entry:first-child {
+        padding-top: 0;
+      }
+      @keyframes fi {
+        from {
+          opacity: 0;
+          transform: translateY(-3px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .entry-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .entry-left {
+        flex: 1;
+        min-width: 0;
+      }
+      .entry-name {
+        font-size: 14.5px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .entry-pills {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+      }
+      .pill {
+        font-size: 11.5px;
+        padding: 2px 8px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: var(--surface2);
+        color: var(--text2);
+        white-space: nowrap;
+      }
+      .pill.blue {
+        background: var(--accent-light);
+        border-color: rgba(26, 58, 92, 0.14);
+        color: var(--accent);
+        font-weight: 500;
+      }
+      .pill.rank {
+        background: #f0f7ee;
+        border-color: rgba(30, 100, 50, 0.15);
+        color: #1e5c32;
+      }
+      .pill.zone {
+        background: #fdf6e8;
+        border-color: rgba(160, 110, 20, 0.18);
+        color: #7a5010;
+      }
+      .pill.dep {
+        background: #f5eef8;
+        border-color: rgba(100, 30, 120, 0.15);
+        color: #5a1a72;
+      }
+      .entry-right {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .entry-dt {
+        font-size: 11.5px;
+        color: var(--text3);
+        text-align: right;
+        white-space: nowrap;
+        padding-top: 2px;
+      }
+      .action-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text2);
+        border-radius: var(--rsm);
+        padding: 3px 9px;
+        font-size: 11.5px;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+      .action-btn:hover {
+        border-color: var(--border-strong);
+        background: var(--surface2);
+      }
+      .action-btn.del:hover {
+        color: var(--danger);
+        background: var(--danger-bg);
+        border-color: rgba(140, 42, 42, 0.2);
+      }
+      .entry-purpose {
+        font-size: 13px;
+        color: var(--text2);
+        margin-top: 6px;
+        line-height: 1.6;
+      }
+      .entry-meta {
+        font-size: 11.5px;
+        color: var(--text3);
+        margin-top: 3px;
+      }
+      .edit-form {
+        background: var(--surface2);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--rsm);
+        padding: 12px;
+        margin-top: 10px;
+      }
+      .edit-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+      }
+      @media (max-width: 440px) {
+        .edit-grid {
+          grid-template-columns: 1fr;
+        }
+        .ef-full {
+          grid-column: 1;
+        }
+      }
+      .ef-full {
+        grid-column: 1/-1;
+      }
+      .edit-form .field label {
+        font-size: 11.5px;
+      }
+      .edit-form .field input,
+      .edit-form .field textarea,
+      .edit-form .field select {
+        font-size: 13px;
+        padding: 7px 9px;
+      }
+      .edit-form .field textarea {
+        min-height: 56px;
+      }
+      .edit-actions {
+        display: flex;
+        gap: 7px;
+        justify-content: flex-end;
+        margin-top: 9px;
+      }
+      .btn-save {
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: var(--rsm);
+        padding: 7px 16px;
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .btn-save:hover {
+        opacity: 0.87;
+      }
+      .btn-cancel {
+        background: transparent;
+        border: 1px solid var(--border-strong);
+        color: var(--text2);
+        border-radius: var(--rsm);
+        padding: 7px 14px;
+        font-size: 12.5px;
+        cursor: pointer;
+      }
+      .btn-cancel:hover {
+        background: var(--surface);
+      }
+      .empty-state,
+      .loading-state {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: var(--text3);
+        font-size: 13.5px;
+      }
+      .spinner {
+        width: 22px;
+        height: 22px;
+        border: 2px solid var(--border-strong);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        margin: 0 auto 10px;
+      }
+      .entry-detail-grid {
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .entry-detail-row {
+        display: flex;
+        gap: 8px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .entry-dl {
+        flex-shrink: 0;
+        width: 130px;
+        color: var(--text3);
+        font-size: 12px;
+        padding-top: 1px;
+      }
+      .entry-dv {
+        color: var(--text2);
+        flex: 1;
+      }
+      @media (max-width: 420px) {
+        .entry-dl {
+          width: 110px;
+        }
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(6px);
+        background: #1a1916;
+        color: #fff;
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        opacity: 0;
+        transition:
+          opacity 0.22s,
+          transform 0.22s;
+        pointer-events: none;
+        z-index: 200;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="hdr">
+        <div class="hdr-title">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="7.5" stroke="white" stroke-width="1.3" />
+            <path
+              d="M9 1.5C9 1.5 6.5 4.5 6.5 9s2.5 7.5 2.5 7.5M9 1.5C9 1.5 11.5 4.5 11.5 9S9 16.5 9 16.5M1.5 9h15"
+              stroke="white"
+              stroke-width="1.3"
+              stroke-linecap="round"
+            />
+          </svg>
+          Overseas Call Log
+        </div>
+        <div class="hdr-right">
+          <div class="live-dot"></div>
+          <span class="live-label">Live shared</span>
+          <button class="btn-hdr" onclick="exportExcel()">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path
+                d="M6.5 1v7M4 6l2.5 2.5L9 6M2 9.5V11a1 1 0 001 1h7a1 1 0 001-1V9.5"
+                stroke="white"
+                stroke-width="1.3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Export Excel
+          </button>
+        </div>
       </div>
-      <div class="field"><label>Date <span class="req">*</span></label><input type="date" id="f-date"></div>
-      <div class="field"><label>Time</label><input type="time" id="f-time"></div>
-      <div class="field">
-        <label>Zone <span class="req">*</span></label>
-        <select id="f-zone" onchange="onZoneChange()">
-          <option value="">— Select zone —</option>
-          <option>Train</option>
-          <option>OWC</option>
-          <option>CCC</option>
-          <option>Arrival Car</option>
-          <option>Departure Car</option>
-          <option>Bus</option>
-          <option>Concourse</option>
-        </select>
+    </header>
+
+    <main>
+      <p class="sec-label">Log a new call</p>
+      <div class="card">
+        <div class="form-grid">
+          <div class="field">
+            <label>Name of officer <span class="req">*</span></label
+            ><input type="text" id="f-by" placeholder="Officer's name" />
+          </div>
+          <div class="field">
+            <label>Rank</label>
+            <select id="f-rank">
+              <option value="">— Select rank —</option>
+              <option>SGT 1</option>
+              <option>SGT 2</option>
+              <option>SGT 3</option>
+              <option>SSGT</option>
+              <option>CI (1)</option>
+              <option>CI (2)</option>
+              <option>INSP</option>
+              <option>ASP</option>
+              <option>DSP</option>
+              <option>SUPT</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Date <span class="req">*</span></label
+            ><input type="date" id="f-date" />
+          </div>
+          <div class="field">
+            <label>Time</label><input type="time" id="f-time" />
+          </div>
+          <div class="field">
+            <label>Zone <span class="req">*</span></label>
+            <select id="f-zone" onchange="onZoneChange()">
+              <option value="">— Select zone —</option>
+              <option>Train</option>
+              <option>OWC</option>
+              <option>CCC</option>
+              <option>Arrival Car</option>
+              <option>Departure Car</option>
+              <option>Bus</option>
+              <option>Concourse</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Deployment</label>
+            <select id="f-dep">
+              <option value="">— Select deployment —</option>
+              <option>A&amp;I</option>
+              <option>S&amp;E</option>
+              <option>DO</option>
+              <option>GL</option>
+              <option>ZTL</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Name of MOP <span class="req">*</span></label
+            ><input type="text" id="f-name" placeholder="e.g. John Smith" />
+          </div>
+          <div class="field">
+            <label>Contact number of MOP</label
+            ><input
+              type="text"
+              id="f-mop"
+              placeholder="MOP's handphone number"
+            />
+          </div>
+          <div class="field">
+            <label
+              >Number used to call (Zone TL number, auto-filled by zone)</label
+            ><input
+              type="text"
+              id="f-number"
+              placeholder="Select a zone to auto-fill"
+              readonly
+              style="
+                background: var(--surface2);
+                color: var(--text2);
+                cursor: default;
+              "
+            />
+          </div>
+          <div class="field">
+            <label>Country</label
+            ><input type="text" id="f-country" placeholder="e.g. Malaysia" />
+          </div>
+          <div class="field full">
+            <label>Purpose of call <span class="req">*</span></label
+            ><textarea
+              id="f-purpose"
+              placeholder="Brief description of the call purpose and any key points discussed…"
+            ></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-clear" onclick="clearForm()">Clear</button>
+          <button class="btn-submit" onclick="submitEntry()">Log call</button>
+        </div>
       </div>
-      <div class="field">
-        <label>Deployment</label>
-        <select id="f-dep">
-          <option value="">— Select deployment —</option>
-          <option>A&amp;I</option><option>S&amp;E</option><option>DO</option><option>GL</option><option>ZTL</option>
-        </select>
+
+      <div class="mt">
+        <div class="toolbar">
+          <p class="sec-label">Call records</p>
+          <span class="count-pill" id="count-pill">—</span>
+          <div class="spacer"></div>
+          <div class="search-wrap">
+            <svg
+              class="search-icon"
+              width="13"
+              height="13"
+              viewBox="0 0 13 13"
+              fill="none"
+            >
+              <circle
+                cx="5.5"
+                cy="5.5"
+                r="4"
+                stroke="currentColor"
+                stroke-width="1.3"
+              />
+              <path
+                d="M9 9l3 3"
+                stroke="currentColor"
+                stroke-width="1.3"
+                stroke-linecap="round"
+              />
+            </svg>
+            <input
+              type="text"
+              id="search"
+              placeholder="Search records…"
+              oninput="renderLog()"
+            />
+          </div>
+        </div>
+        <div class="card" id="log-container">
+          <div class="loading-state">
+            <div class="spinner"></div>
+            Loading records…
+          </div>
+        </div>
       </div>
-      <div class="field"><label>Name of MOP <span class="req">*</span></label><input type="text" id="f-name" placeholder="e.g. John Smith"></div>
-      <div class="field"><label>Contact number of MOP</label><input type="text" id="f-mop" placeholder="MOP's handphone number"></div>
-      <div class="field"><label>Number used to call (Zone TL number, auto-filled by zone)</label><input type="text" id="f-number" placeholder="Select a zone to auto-fill" readonly style="background:var(--surface2);color:var(--text2);cursor:default"></div>
-      <div class="field"><label>Country</label><input type="text" id="f-country" placeholder="e.g. Malaysia"></div>
-      <div class="field full"><label>Purpose of call <span class="req">*</span></label><textarea id="f-purpose" placeholder="Brief description of the call purpose and any key points discussed…"></textarea></div>
-    </div>
-    <div class="form-actions">
-      <button class="btn-clear" onclick="clearForm()">Clear</button>
-      <button class="btn-submit" onclick="submitEntry()">Log call</button>
-    </div>
-  </div>
+    </main>
 
-  <div class="mt">
-    <div class="toolbar">
-      <p class="sec-label">Call records</p>
-      <span class="count-pill" id="count-pill">—</span>
-      <div class="spacer"></div>
-      <div class="search-wrap">
-        <svg class="search-icon" width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M9 9l3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-        <input type="text" id="search" placeholder="Search records…" oninput="renderLog()">
-      </div>
-    </div>
-    <div class="card" id="log-container">
-      <div class="loading-state"><div class="spinner"></div>Loading records…</div>
-    </div>
-  </div>
-</main>
+    <div class="toast" id="toast"></div>
 
-<div class="toast" id="toast"></div>
+    <script>
+      /* ── Storage: falls back to localStorage when window.storage is unavailable ── */
+      const STORAGE_KEY = "ocl_shared_v4";
 
-<script>
-/* ── Storage: falls back to localStorage when window.storage is unavailable ── */
-const STORAGE_KEY = 'ocl_shared_v4';
+      const store = {
+        async get() {
+          if (window.storage) {
+            try {
+              const r = await window.storage.get(STORAGE_KEY, true);
+              return r ? JSON.parse(r.value) : [];
+            } catch {}
+          }
+          try {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+          } catch {
+            return [];
+          }
+        },
+        async set(entries) {
+          if (window.storage) {
+            try {
+              await window.storage.set(
+                STORAGE_KEY,
+                JSON.stringify(entries),
+                true,
+              );
+              return;
+            } catch {}
+          }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+        },
+      };
 
-const store = {
-  async get() {
-    if (window.storage) {
-      try { const r = await window.storage.get(STORAGE_KEY, true); return r ? JSON.parse(r.value) : []; } catch {}
-    }
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
-  },
-  async set(entries) {
-    if (window.storage) {
-      try { await window.storage.set(STORAGE_KEY, JSON.stringify(entries), true); return; } catch {}
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  }
-};
+      const RANKS = [
+        "SGT 1",
+        "SGT 2",
+        "SGT 3",
+        "SSGT",
+        "CI (1)",
+        "CI (2)",
+        "INSP",
+        "ASP",
+        "DSP",
+        "SUPT",
+      ];
+      const DEPS = ["A&I", "S&E", "DO", "GL", "ZTL"];
+      const ZONES = [
+        "Train",
+        "OWC",
+        "CCC",
+        "Arrival Car",
+        "Departure Car",
+        "Bus",
+        "Concourse",
+      ];
 
-const RANKS = ['SGT 1','SGT 2','SGT 3','SSGT','CI (1)','CI (2)','INSP','ASP','DSP','SUPT'];
-const DEPS  = ['A&I','S&E','DO','GL','ZTL'];
-const ZONES = ['Train','OWC','CCC','Arrival Car','Departure Car','Bus','Concourse'];
+      let editingId = null;
 
-let editingId = null;
+      function toast(msg) {
+        const el = document.getElementById("toast");
+        el.textContent = msg;
+        el.classList.add("show");
+        clearTimeout(el._t);
+        el._t = setTimeout(() => el.classList.remove("show"), 2700);
+      }
 
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
-  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2700);
-}
+      function selectHtml(id, opts, val) {
+        const options = [
+          '<option value="">— Select —</option>',
+          ...opts.map(
+            (o) => `<option${o === val ? " selected" : ""}>${esc(o)}</option>`,
+          ),
+        ].join("");
+        return `<select id="${id}">${options}</select>`;
+      }
 
-function selectHtml(id, opts, val) {
-  const options = ['<option value="">— Select —</option>',
-    ...opts.map(o => `<option${o===val?' selected':''}>${esc(o)}</option>`)].join('');
-  return `<select id="${id}">${options}</select>`;
-}
+      const ZONE_NUMBERS = {
+        "Arrival Car": "12345678",
+        "Departure Car": "23456789",
+        Train: "34567890",
+        OWC: "01234567",
+        CCC: "45678901",
+        Bus: "56789012",
+        Concourse: "67890123",
+      };
 
-const ZONE_NUMBERS = {
-  'Arrival Car':   '12345678',
-  'Departure Car': '23456789',
-  'Train':         '34567890',
-  'OWC':           '01234567',
-  'CCC':           '45678901',
-  'Bus':           '56789012',
-  'Concourse':     '67890123'
-};
+      function onZoneChange() {
+        const zone = document.getElementById("f-zone").value;
+        const numEl = document.getElementById("f-number");
+        numEl.value = ZONE_NUMBERS[zone] || "";
+        numEl.placeholder = zone ? "" : "Select a zone to auto-fill";
+      }
 
-function onZoneChange() {
-  const zone = document.getElementById('f-zone').value;
-  const numEl = document.getElementById('f-number');
-  numEl.value = ZONE_NUMBERS[zone] || '';
-  numEl.placeholder = zone ? '' : 'Select a zone to auto-fill';
-}
+      function clearForm() {
+        ["f-name", "f-mop", "f-country", "f-by"].forEach(
+          (i) => (document.getElementById(i).value = ""),
+        );
+        ["f-rank", "f-dep", "f-zone"].forEach(
+          (i) => (document.getElementById(i).value = ""),
+        );
+        document.getElementById("f-number").value = "";
+        document.getElementById("f-number").placeholder =
+          "Select a zone to auto-fill";
+        document.getElementById("f-purpose").value = "";
+        document.getElementById("f-time").value = "";
+        document.getElementById("f-date").value = new Date()
+          .toISOString()
+          .split("T")[0];
+      }
 
-function clearForm() {
-  ['f-name','f-mop','f-country','f-by'].forEach(i => document.getElementById(i).value = '');
-  ['f-rank','f-dep','f-zone'].forEach(i => document.getElementById(i).value = '');
-  document.getElementById('f-number').value = '';
-  document.getElementById('f-number').placeholder = 'Select a zone to auto-fill';
-  document.getElementById('f-purpose').value = '';
-  document.getElementById('f-time').value = '';
-  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
-}
+      function shake(id) {
+        const el = document.getElementById(id);
+        el.style.borderColor = "#b94a4a";
+        el.style.boxShadow = "0 0 0 3px rgba(185,74,74,0.12)";
+        setTimeout(() => {
+          el.style.borderColor = "";
+          el.style.boxShadow = "";
+        }, 1600);
+      }
 
-function shake(id) {
-  const el = document.getElementById(id);
-  el.style.borderColor = '#b94a4a'; el.style.boxShadow = '0 0 0 3px rgba(185,74,74,0.12)';
-  setTimeout(() => { el.style.borderColor = ''; el.style.boxShadow = ''; }, 1600);
-}
+      async function submitEntry() {
+        const g = (id) => document.getElementById(id).value.trim();
+        const date = document.getElementById("f-date").value;
+        const time = document.getElementById("f-time").value;
+        const name = g("f-name"),
+          purpose = g("f-purpose");
+        const zone = g("f-zone");
+        if (!g("f-by")) {
+          shake("f-by");
+          toast("Please enter the name of the person who called.");
+          return;
+        }
+        if (!date) {
+          shake("f-date");
+          toast("Please enter a date.");
+          return;
+        }
+        if (!zone) {
+          shake("f-zone");
+          toast("Please select a zone.");
+          return;
+        }
+        if (!name) {
+          shake("f-name");
+          toast("Please enter the overseas contact name.");
+          return;
+        }
+        if (!purpose) {
+          shake("f-purpose");
+          toast("Please describe the purpose of the call.");
+          return;
+        }
 
-async function submitEntry() {
-  const g = id => document.getElementById(id).value.trim();
-  const date = document.getElementById('f-date').value;
-  const time = document.getElementById('f-time').value;
-  const name = g('f-name'), purpose = g('f-purpose');
-  const zone = g('f-zone');
-  if (!g('f-by'))  { shake('f-by');      toast('Please enter the name of the person who called.'); return; }
-  if (!date)        { shake('f-date');    toast('Please enter a date.'); return; }
-  if (!zone)        { shake('f-zone');    toast('Please select a zone.'); return; }
-  if (!name)        { shake('f-name');    toast('Please enter the overseas contact name.'); return; }
-  if (!purpose)     { shake('f-purpose'); toast('Please describe the purpose of the call.'); return; }
+        const entries = await store.get();
+        entries.unshift({
+          id: Date.now(),
+          date,
+          time,
+          name,
+          mop: g("f-mop"),
+          number: g("f-number"),
+          country: g("f-country"),
+          by: g("f-by"),
+          rank: g("f-rank"),
+          dep: g("f-dep"),
+          zone,
+          purpose,
+          logged_at: new Date().toISOString(),
+        });
+        await store.set(entries);
+        clearForm();
+        await renderLog();
+        toast("Call logged successfully.");
+      }
 
-  const entries = await store.get();
-  entries.unshift({ id: Date.now(), date, time, name,
-    mop: g('f-mop'),
-    number: g('f-number'),
-    country: g('f-country'), by: g('f-by'),
-    rank: g('f-rank'), dep: g('f-dep'), zone,
-    purpose, logged_at: new Date().toISOString() });
-  await store.set(entries);
-  clearForm(); await renderLog(); toast('Call logged successfully.');
-}
+      async function deleteEntry(id) {
+        const entries = (await store.get()).filter((e) => e.id !== id);
+        await store.set(entries);
+        await renderLog();
+        toast("Entry removed.");
+      }
 
-async function deleteEntry(id) {
-  const entries = (await store.get()).filter(e => e.id !== id);
-  await store.set(entries); await renderLog(); toast('Entry removed.');
-}
+      function startEdit(id) {
+        editingId = id;
+        renderLog();
+      }
+      function cancelEdit() {
+        editingId = null;
+        renderLog();
+      }
 
-function startEdit(id) { editingId = id; renderLog(); }
-function cancelEdit()  { editingId = null; renderLog(); }
+      async function saveEdit(id) {
+        const g = (sfx) =>
+          document.getElementById("e-" + sfx + "-" + id).value.trim();
+        const dv = (sfx) =>
+          document.getElementById("e-" + sfx + "-" + id).value;
+        const entries = await store.get();
+        const idx = entries.findIndex((e) => e.id === id);
+        if (idx === -1) return;
+        entries[idx] = {
+          ...entries[idx],
+          date: dv("date"),
+          time: dv("time"),
+          name: g("name"),
+          mop: g("mop"),
+          number: g("number"),
+          country: g("country"),
+          by: g("by"),
+          rank: g("rank"),
+          dep: g("dep"),
+          zone: g("zone"),
+          purpose: g("purpose"),
+          edited_at: new Date().toISOString(),
+        };
+        await store.set(entries);
+        editingId = null;
+        await renderLog();
+        toast("Entry updated.");
+      }
 
-async function saveEdit(id) {
-  const g  = sfx => document.getElementById('e-' + sfx + '-' + id).value.trim();
-  const dv = sfx => document.getElementById('e-' + sfx + '-' + id).value;
-  const entries = await store.get();
-  const idx = entries.findIndex(e => e.id === id); if (idx === -1) return;
-  entries[idx] = { ...entries[idx],
-    date: dv('date'), time: dv('time'), name: g('name'),
-    mop: g('mop'), number: g('number'),
-    country: g('country'), by: g('by'), rank: g('rank'), dep: g('dep'), zone: g('zone'),
-    purpose: g('purpose'), edited_at: new Date().toISOString() };
-  await store.set(entries); editingId = null; await renderLog(); toast('Entry updated.');
-}
+      function esc(s) {
+        if (!s) return "";
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+      function fmtDate(d) {
+        if (!d) return "";
+        return new Date(d + "T00:00:00").toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+      }
 
-function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtDate(d) { if (!d) return ''; return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }); }
+      async function renderLog() {
+        const entries = await store.get();
+        const q = document.getElementById("search").value.toLowerCase().trim();
+        const filtered = q
+          ? entries.filter((e) =>
+              [
+                e.name,
+                e.number,
+                e.country,
+                e.purpose,
+                e.by,
+                e.rank,
+                e.dep,
+                e.zone,
+              ]
+                .join(" ")
+                .toLowerCase()
+                .includes(q),
+            )
+          : entries;
 
-async function renderLog() {
-  const entries = await store.get();
-  const q = document.getElementById('search').value.toLowerCase().trim();
-  const filtered = q ? entries.filter(e => [e.name,e.number,e.country,e.purpose,e.by,e.rank,e.dep,e.zone].join(' ').toLowerCase().includes(q)) : entries;
+        document.getElementById("count-pill").textContent =
+          entries.length + (entries.length === 1 ? " entry" : " entries");
+        const container = document.getElementById("log-container");
 
-  document.getElementById('count-pill').textContent = entries.length + (entries.length === 1 ? ' entry' : ' entries');
-  const container = document.getElementById('log-container');
+        if (!filtered.length) {
+          container.innerHTML = `<div class="empty-state">${q ? "No records match your search." : "No calls logged yet. Use the form above to add the first entry."}</div>`;
+          return;
+        }
 
-  if (!filtered.length) {
-    container.innerHTML = `<div class="empty-state">${q ? 'No records match your search.' : 'No calls logged yet. Use the form above to add the first entry.'}</div>`;
-    return;
-  }
+        container.innerHTML = filtered
+          .map((e) => {
+            const isEditing = editingId === e.id;
+            const pills = [
+              e.number ? `<span class="pill blue">${esc(e.number)}</span>` : "",
+              e.country ? `<span class="pill">${esc(e.country)}</span>` : "",
+              e.dep ? `<span class="pill dep">${esc(e.dep)}</span>` : "",
+              e.zone ? `<span class="pill zone">${esc(e.zone)}</span>` : "",
+            ]
+              .filter(Boolean)
+              .join("");
 
-  container.innerHTML = filtered.map(e => {
-    const isEditing = editingId === e.id;
-    const pills = [
-      e.number  ? `<span class="pill blue">${esc(e.number)}</span>` : '',
-      e.country ? `<span class="pill">${esc(e.country)}</span>` : '',
-      e.dep     ? `<span class="pill dep">${esc(e.dep)}</span>` : '',
-      e.zone    ? `<span class="pill zone">${esc(e.zone)}</span>` : '',
-    ].filter(Boolean).join('');
-
-    const editForm = isEditing ? `<div class="edit-form">
+            const editForm = isEditing
+              ? `<div class="edit-form">
       <div class="edit-grid">
         <div class="field"><label>Name of officer</label><input type="text" id="e-by-${e.id}" value="${esc(e.by)}"></div>
-        <div class="field"><label>Rank</label>${selectHtml('e-rank-'+e.id, RANKS, e.rank)}</div>
+        <div class="field"><label>Rank</label>${selectHtml("e-rank-" + e.id, RANKS, e.rank)}</div>
         <div class="field"><label>Date</label><input type="date" id="e-date-${e.id}" value="${esc(e.date)}"></div>
         <div class="field"><label>Time</label><input type="time" id="e-time-${e.id}" value="${esc(e.time)}"></div>
-        <div class="field"><label>Zone</label>${selectHtml('e-zone-'+e.id, ZONES, e.zone)}</div>
-        <div class="field"><label>Deployment</label>${selectHtml('e-dep-'+e.id, DEPS, e.dep)}</div>
+        <div class="field"><label>Zone</label>${selectHtml("e-zone-" + e.id, ZONES, e.zone)}</div>
+        <div class="field"><label>Deployment</label>${selectHtml("e-dep-" + e.id, DEPS, e.dep)}</div>
         <div class="field"><label>Name of overseas contact</label><input type="text" id="e-name-${e.id}" value="${esc(e.name)}"></div>
-        <div class="field"><label>Contact number of MOP</label><input type="text" id="e-mop-${e.id}" value="${esc(e.mop||'')}"></div>
+        <div class="field"><label>Contact number of MOP</label><input type="text" id="e-mop-${e.id}" value="${esc(e.mop || "")}"></div>
         <div class="field"><label>Number used to call (Zone TL phone)</label><input type="text" id="e-number-${e.id}" value="${esc(e.number)}"></div>
         <div class="field"><label>Country</label><input type="text" id="e-country-${e.id}" value="${esc(e.country)}"></div>
         <div class="field ef-full"><label>Purpose of call</label><textarea id="e-purpose-${e.id}">${esc(e.purpose)}</textarea></div>
@@ -344,84 +1026,117 @@ async function renderLog() {
         <button class="btn-cancel" onclick="cancelEdit()">Cancel</button>
         <button class="btn-save" onclick="saveEdit(${e.id})">Save changes</button>
       </div>
-    </div>` : '';
+    </div>`
+              : "";
 
-    return `<div class="entry" id="entry-${e.id}">
+            return `<div class="entry" id="entry-${e.id}">
       <div class="entry-top">
         <div class="entry-left">
-          <div class="entry-name">${esc(e.name) || '—'}</div>
+          <div class="entry-name">${esc(e.name) || "—"}</div>
           <div class="entry-pills">
-            ${e.rank ? '<span class="pill rank">' + esc(e.rank) + '</span>' : ''}
-            ${e.dep  ? '<span class="pill dep">'  + esc(e.dep)  + '</span>' : ''}
-            ${e.zone ? '<span class="pill zone">' + esc(e.zone) + '</span>' : ''}
+            ${e.rank ? '<span class="pill rank">' + esc(e.rank) + "</span>" : ""}
+            ${e.dep ? '<span class="pill dep">' + esc(e.dep) + "</span>" : ""}
+            ${e.zone ? '<span class="pill zone">' + esc(e.zone) + "</span>" : ""}
           </div>
         </div>
         <div class="entry-right">
-          <div class="entry-dt">${fmtDate(e.date)}${e.time ? '<br>' + esc(e.time) : ''}</div>
+          <div class="entry-dt">${fmtDate(e.date)}${e.time ? "<br>" + esc(e.time) : ""}</div>
           <button class="action-btn" onclick="startEdit(${e.id})">Edit</button>
           <button class="action-btn del" onclick="deleteEntry(${e.id})">&#x2715;</button>
         </div>
       </div>
       <div class="entry-detail-grid">
         <div class="entry-detail-row"><span class="entry-dl">Name of officer</span><span class="entry-dv">${esc(e.by)}</span></div>
-        ${e.mop ? '<div class="entry-detail-row"><span class="entry-dl">Contact no. of MOP</span><span class="entry-dv">' + esc(e.mop) + '</span></div>' : ''}
-        <div class="entry-detail-row"><span class="entry-dl">ZTL phone number</span><span class="entry-dv">${esc(e.number) || '—'}</span></div>
-        ${e.country ? '<div class="entry-detail-row"><span class="entry-dl">Country</span><span class="entry-dv">' + esc(e.country) + '</span></div>' : ''}
+        ${e.mop ? '<div class="entry-detail-row"><span class="entry-dl">Contact no. of MOP</span><span class="entry-dv">' + esc(e.mop) + "</span></div>" : ""}
+        <div class="entry-detail-row"><span class="entry-dl">ZTL phone number</span><span class="entry-dv">${esc(e.number) || "—"}</span></div>
+        ${e.country ? '<div class="entry-detail-row"><span class="entry-dl">Country</span><span class="entry-dv">' + esc(e.country) + "</span></div>" : ""}
         <div class="entry-detail-row"><span class="entry-dl">Purpose</span><span class="entry-dv">${esc(e.purpose)}</span></div>
       </div>
-      ${e.edited_at ? '<div class="entry-meta">edited</div>' : ''}
+      ${e.edited_at ? '<div class="entry-meta">edited</div>' : ""}
       ${editForm}
     </div>`;
-  }).join('');
-}
+          })
+          .join("");
+      }
 
-async function exportExcel() {
-  if (typeof XLSX === 'undefined') { toast('Excel library not loaded. Please check your connection.'); return; }
-  const entries = await store.get();
-  if (!entries.length) { toast('No entries to export yet.'); return; }
-  const rows = entries.map(e => ({
-    'Name of Officer': e.by || '',
-    'Rank': e.rank || '',
-    'Date': e.date || '',
-    'Time': e.time || '',
-    'Zone': e.zone || '',
-    'Deployment': e.dep || '',
-    'Contact Number of MOP': e.mop || '',
-    'Name of Overseas Contact': e.name || '',
-    'ZTL Phone Number': e.number || '',
-    'Country': e.country || '',
-    'Purpose of Call': e.purpose || '',
-    'Entry Timestamp': e.logged_at ? new Date(e.logged_at).toLocaleString('en-GB') : ''
-  }));
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [{wch:22},{wch:10},{wch:13},{wch:9},{wch:14},{wch:14},{wch:22},{wch:22},{wch:16},{wch:14},{wch:48},{wch:22}];
-  XLSX.utils.book_append_sheet(wb, ws, 'Call Log');
-  XLSX.writeFile(wb, `Overseas_Call_Log_${new Date().toISOString().split('T')[0]}.xlsx`);
-  toast(`Exported ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}.`);
-}
+      async function exportExcel() {
+        if (typeof XLSX === "undefined") {
+          toast("Excel library not loaded. Please check your connection.");
+          return;
+        }
+        const entries = await store.get();
+        if (!entries.length) {
+          toast("No entries to export yet.");
+          return;
+        }
+        const rows = entries.map((e) => ({
+          "Name of Officer": e.by || "",
+          Rank: e.rank || "",
+          Date: e.date || "",
+          Time: e.time || "",
+          Zone: e.zone || "",
+          Deployment: e.dep || "",
+          "Contact Number of MOP": e.mop || "",
+          "Name of Overseas Contact": e.name || "",
+          "ZTL Phone Number": e.number || "",
+          Country: e.country || "",
+          "Purpose of Call": e.purpose || "",
+          "Entry Timestamp": e.logged_at
+            ? new Date(e.logged_at).toLocaleString("en-GB")
+            : "",
+        }));
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws["!cols"] = [
+          { wch: 22 },
+          { wch: 10 },
+          { wch: 13 },
+          { wch: 9 },
+          { wch: 14 },
+          { wch: 14 },
+          { wch: 22 },
+          { wch: 22 },
+          { wch: 16 },
+          { wch: 14 },
+          { wch: 48 },
+          { wch: 22 },
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, "Call Log");
+        XLSX.writeFile(
+          wb,
+          `Overseas_Call_Log_${new Date().toISOString().split("T")[0]}.xlsx`,
+        );
+        toast(
+          `Exported ${entries.length} ${entries.length === 1 ? "entry" : "entries"}.`,
+        );
+      }
 
-/* ── Live polling (works when window.storage is available) ── */
-let lastHash = null;
-async function poll() {
-  try {
-    if (window.storage) {
-      const r = await window.storage.get(STORAGE_KEY, true);
-      const h = r ? r.value.slice(0, 60) : 'empty';
-      if (h !== lastHash) { lastHash = h; await renderLog(); }
-    }
-  } catch {}
-  setTimeout(poll, 4000);
-}
+      /* ── Live polling (works when window.storage is available) ── */
+      let lastHash = null;
+      async function poll() {
+        try {
+          if (window.storage) {
+            const r = await window.storage.get(STORAGE_KEY, true);
+            const h = r ? r.value.slice(0, 60) : "empty";
+            if (h !== lastHash) {
+              lastHash = h;
+              await renderLog();
+            }
+          }
+        } catch {}
+        setTimeout(poll, 4000);
+      }
 
-window.startEdit  = startEdit;
-window.cancelEdit = cancelEdit;
-window.saveEdit   = saveEdit;
-window.deleteEntry = deleteEntry;
+      window.startEdit = startEdit;
+      window.cancelEdit = cancelEdit;
+      window.saveEdit = saveEdit;
+      window.deleteEntry = deleteEntry;
 
-document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
-renderLog();
-poll();
-</script>
-</body>
+      document.getElementById("f-date").value = new Date()
+        .toISOString()
+        .split("T")[0];
+      renderLog();
+      poll();
+    </script>
+  </body>
 </html>
